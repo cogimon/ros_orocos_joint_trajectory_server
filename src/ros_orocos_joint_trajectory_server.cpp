@@ -76,25 +76,28 @@ bool ros_orocos_joint_trajectory_server::startHook()
 
 void ros_orocos_joint_trajectory_server::updateHook()
 {
-    RTT::FlowStatus fs = _joint_trajectory_port.read(_joint_trajectory_msg);
-    if(fs == 2)
+    if(!_send_joint_trj)
     {
-        _send_joint_trj = true;
-        _trj_counter = 0;
+        RTT::FlowStatus fs = _joint_trajectory_port.read(_joint_trajectory_msg);
+        if(fs == 2)
+        {
+            _send_joint_trj = true;
+        }
     }
 
-    if(_send_joint_trj && _joint_trajectory_msg)
+
+    if(_send_joint_trj && _joint_trajectory_msg.points.size() > 0)
     {
         std::map<std::string, boost::shared_ptr<RTT::OutputPort<rstrt::kinematics::JointAngles> > >::iterator it;
         for(it = _kinematic_chains_output_ports.begin(); it != _kinematic_chains_output_ports.end(); it++)
         {
             for(unsigned int i = 0; i < _map_kin_chains_joints.at(it->first).size(); ++i)
             {
-                int id = std::distance(_joint_trajectory_msg->joint_names.begin(),
-                                       std::find(_joint_trajectory_msg->joint_names.begin(), _joint_trajectory_msg->joint_names.end(),
+                int id = std::distance(_joint_trajectory_msg.joint_names.begin(),
+                                       std::find(_joint_trajectory_msg.joint_names.begin(), _joint_trajectory_msg.joint_names.end(),
                                        _map_kin_chains_joints.at(it->first)[i]));
                 _kinematic_chains_desired_joint_state_map.at(it->first).angles[i] =
-                        _joint_trajectory_msg->points[_trj_counter].positions[id];
+                        _joint_trajectory_msg.points[_trj_counter].positions[id];
             }
 
             _kinematic_chains_output_ports.at(it->first)->write(
@@ -102,8 +105,13 @@ void ros_orocos_joint_trajectory_server::updateHook()
         }
         _trj_counter++;
 
-        if(_trj_counter >= _joint_trajectory_msg->points.size())
+        if(_trj_counter >= _joint_trajectory_msg.points.size()){
             _send_joint_trj = false;
+            _trj_counter = 0;}
+
+
     }
 
 }
+
+ORO_CREATE_COMPONENT_LIBRARY()ORO_LIST_COMPONENT_TYPE(ros_orocos_joint_trajectory_server)

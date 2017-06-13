@@ -27,11 +27,11 @@ private:
     std::map<std::string, boost::shared_ptr<RTT::OutputPort<rstrt::kinematics::JointAngles> > > _kinematic_chains_output_ports;
     std::map<std::string, rstrt::kinematics::JointAngles> _kinematic_chains_desired_joint_state_map;
 
-    RTT::InputPort<trajectory_msgs::JointTrajectory::Ptr> _joint_trajectory_port;
-    trajectory_msgs::JointTrajectory::Ptr _joint_trajectory_msg;
+    RTT::InputPort<trajectory_msgs::JointTrajectory> _joint_trajectory_port;
+    trajectory_msgs::JointTrajectory _joint_trajectory_msg;
 
     bool _send_joint_trj;
-    bool _trj_counter;
+    int _trj_counter;
 };
 
 
