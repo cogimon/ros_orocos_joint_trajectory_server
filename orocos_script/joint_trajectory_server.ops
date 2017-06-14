@@ -1,0 +1,59 @@
+#!/usr/bin/env deployer
+
+import("eigen_typekit")
+import("kdl_typekit")
+import("rst-rt_typekit")
+import("rtt_coman")
+require("os")
+
+##LOAD COMAN
+loadComponent("coman","cogimon::rtt_coman")
+
+setActivity("coman",0.001,50,ORO_SCHED_RT)
+
+var string YAML_path = os.getenv("ROBOTOLOGY_ROOT") + "/robots/rtt_coman/config/config.yaml"
+coman.loadYAML(YAML_path)
+
+var string urdf_path = os.getenv("ROBOTOLOGY_ROOT") + "/robots/cogimon-gazebo-models/iit-coman/model.urdf"
+var string srdf_path = os.getenv("ROBOTOLOGY_ROOT") + "/robots/cogimon-gazebo-models/iit-coman/coman.srdf"
+coman.loadURDFAndSRDF(urdf_path, srdf_path)
+
+coman.configure()
+
+var double M_PI = 3.14159265359;
+coman.setOffSet("LShLat", 90.0*M_PI/180.0)
+coman.setOffSet("RShLat", -90.0*M_PI/180.0)
+
+var ints direction = ints(-1, -1, 1, -1, 1 ,1)
+coman.setForceTorqueMeasurementDirection("r_arm_ft", direction)
+
+coman.start()
+
+
+import("rtt_ros")
+import("rtt_rosnode")
+import("rtt_sensor_msgs")
+import("rtt_geometry_msgs")
+import("rtt_trajectory_msgs")
+import("orocos_ros_joint_state_publisher")
+import("ros_orocos_joint_trajectory_server")
+
+## LOAD OROCOS_ROS_JOINT_STATE_PUBLISHER
+loadComponent("coman_ros_joint_state_publisher","orocos_ros_joint_state_publisher")
+setActivity("coman_ros_joint_state_publisher",0.05,1,ORO_SCHED_OTHER)
+
+addPeer("coman_ros_joint_state_publisher", "coman")
+coman_ros_joint_state_publisher.attachToRobot("coman")
+coman_ros_joint_state_publisher.loadURDFAndSRDF(urdf_path,srdf_path)
+
+coman_ros_joint_state_publisher.configure()
+coman_ros_joint_state_publisher.start()
+
+## JOINT_TRAJECOTRY_SERVER
+loadComponent("joint_trajectory_server","ros_orocos_joint_trajectory_server")
+
+addPeer("joint_trajectory_server", "coman")
+joint_trajectory_server.attachToRobot("coman")
+joint_trajectory_server.configure()
+joint_trajectory_server.start()
+
